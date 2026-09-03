@@ -1,0 +1,145 @@
+"""Command-line entry point for Pramaan. Thin wrapper over the library
+functions in profiler/contracts/sentry/chaos/evals -- no business logic here.
+
+Usage: python -m pramaan.cli <subcommand> ...
+"""
+import argparse
+import getpass
+import json
+import os
+import re
+import sys
+
+from pramaan.chaos import (
+    get_ground_truth_logs,
+    inject_null_flood,
+    inject_referential_orphan,
+    inject_silent_duplicate_load,
+)
+from pramaan.contracts import CONTRACTS_DIR, approve_contract, save_draft_contract
+from pramaan.evals import evaluate_sweep_results
+from pramaan.profiler import generate_draft_contract
+from pramaan.sentry import execute_sweep
+
+DEFAULT_DATASET = os.getenv("DEMO_DATASET", "pramaan_demo")
+
+INJECT_FUNCS = {
+    "null_flood": inject_null_flood,
+    "silent_duplicate_load": inject_silent_duplicate_load,
+    "referential_orphan": inject_referential_orphan,
+}
+
+
+def _print_json(obj) -> None:
+    print(json.dumps(obj, indent=2, default=str))
+
+
+def cmd_propose(args: argparse.Namespace) -> None:
+    draft = generate_draft_contract(args.dataset, args.table)
+    path = save_draft_contract(draft)
+    contract_id = f"{draft.dataset}:{draft.table}:{draft.version}"
+    print(f"Draft contract saved to {path}")
+    print(f"contract_id: {contract_id}")
+    _print_json(draft.model_dump())
+
+
+def cmd_approve(args: argparse.Namespace) -> None:
+    try:
+        dataset, table, version = args.contract_id.split(":")
+    except ValueError:
+        sys.exit(
+            f"Invalid contract_id '{args.contract_id}'. "
+            "Expected format dataset:table:version (as printed by `propose`)."
+        )
+    approved_by = args.by or os.getenv("USER") or getpass.getuser()
+    approved = approve_contract(dataset, table, int(version), approved_by)
+    _print_json(approved.model_dump())
+
+
+def cmd_sweep(args: argparse.Namespace) -> None:
+    results = execute_sweep(args.dataset, args.table)
+    _print_json([r.model_dump() for r in results])
+
+
+def cmd_inject(args: argparse.Namespace) -> None:
+    func = INJECT_FUNCS.get(args.fault_kind)
+    if func is None:
+        sys.exit(f"Unknown fault_kind '{args.fault_kind}'. Choose from: {', '.join(INJECT_FUNCS)}")
+    func(args.dataset, args.table)
+    print(f"Injected {args.fault_kind} into {args.dataset}.{args.table}")
+
+
+def cmd_revert(args: argparse.Namespace) -> None:
+    logs = get_ground_truth_logs()
+    entry = next((g for g in logs if g["fault_id"] == args.fault_id), None)
+    if entry is None:
+        sys.exit(f"No ground truth entry found for fault_id '{args.fault_id}'")
+    _print_json(entry)
+    sys.exit(
+        "pramaan.chaos exposes no undo/revert function for injected faults "
+        "(only inject_* and get_ground_truth_logs) -- nothing was reverted. "
+        "This subcommand cannot do more without new logic being added to chaos.py."
+    )
+
+
+def cmd_eval(args: argparse.Namespace) -> None:
+    dataset = args.dataset
+    pattern = re.compile(rf"^{re.escape(dataset)}_(.+)_approved_v\d+\.json$")
+    contracts_dir = CONTRACTS_DIR
+    tables = sorted({
+        m.group(1)
+        for f in os.listdir(contracts_dir)
+        if (m := pattern.match(f))
+    }) if os.path.isdir(contracts_dir) else []
+
+    if not tables:
+        sys.exit(f"No approved contracts found in {contracts_dir} for dataset '{dataset}'")
+
+    all_results = []
+    for table in tables:
+        all_results.extend(execute_sweep(dataset, table))
+
+    _print_json(evaluate_sweep_results(all_results))
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="pramaan", description="Pramaan data trust CLI")
+    parser.add_argument("--dataset", default=DEFAULT_DATASET, help=f"BigQuery dataset (default: {DEFAULT_DATASET})")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_propose = sub.add_parser("propose", help="Profile a table and draft a contract")
+    p_propose.add_argument("table")
+    p_propose.set_defaults(func=cmd_propose)
+
+    p_approve = sub.add_parser("approve", help="Approve a draft contract")
+    p_approve.add_argument("contract_id", help="dataset:table:version, as printed by `propose`")
+    p_approve.add_argument("--by", help="Approver name (default: $USER)")
+    p_approve.set_defaults(func=cmd_approve)
+
+    p_sweep = sub.add_parser("sweep", help="Run the approved contract's rules against a table")
+    p_sweep.add_argument("table")
+    p_sweep.set_defaults(func=cmd_sweep)
+
+    p_inject = sub.add_parser("inject", help="Inject a chaos fault")
+    p_inject.add_argument("fault_kind", choices=sorted(INJECT_FUNCS))
+    p_inject.add_argument("table")
+    p_inject.set_defaults(func=cmd_inject)
+
+    p_revert = sub.add_parser("revert", help="Look up an injected fault by id")
+    p_revert.add_argument("fault_id")
+    p_revert.set_defaults(func=cmd_revert)
+
+    p_eval = sub.add_parser("eval", help="Sweep every approved contract and score against ground truth")
+    p_eval.set_defaults(func=cmd_eval)
+
+    return parser
+
+
+def main(argv=None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

@@ -2,10 +2,10 @@ import json
 import os
 from typing import List, Dict, Any
 from pydantic import BaseModel
-from google import genai
 from google.genai import types
 
 from pramaan.bq import execute_query
+from pramaan.config import get_genai_client
 from pramaan.rules import RuleUnion
 
 class DraftContract(BaseModel):
@@ -30,8 +30,8 @@ def fetch_table_schema_metadata(dataset: str, table: str) -> List[Dict[str, Any]
 def generate_draft_contract(dataset: str, table: str) -> DraftContract:
     """Uses Gemini 2.5 Flash to profile table schema metadata and propose a data contract."""
     schema_info = fetch_table_schema_metadata(dataset, table)
-    
-    client = genai.Client()
+
+    client = get_genai_client()
     
     prompt = f"""
     You are an automated data profiling engine. Analyze the following BigQuery table schema metadata for table `{dataset}.{table}`:
