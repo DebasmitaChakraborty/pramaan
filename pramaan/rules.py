@@ -60,6 +60,14 @@ class RegexConformanceRule(BaseRule):
     rule_type: Literal["regex_conformance"] = "regex_conformance"
     pattern: str
 
+class SchemaConformanceRule(BaseModel):
+    """Checks the table's actual columns against an expected list. Compiles to
+    nothing in the sweep SQL -- sentry.execute_sweep checks it separately via
+    bq.get_table_columns, since it isn't a per-row metric a SELECT can produce."""
+    rule_id: str
+    rule_type: Literal["schema_conformance"] = "schema_conformance"
+    expected_columns: List[str]
+
 RuleUnion = Union[
     NullRateRule,
     UniquenessRule,
@@ -68,7 +76,8 @@ RuleUnion = Union[
     SetMembershipRule,
     FreshnessRule,
     RowCountDriftRule,
-    RegexConformanceRule
+    RegexConformanceRule,
+    SchemaConformanceRule
 ]
 
 def compile_rule_to_sql(rule: RuleUnion, dataset: str, table: str) -> str:
@@ -169,5 +178,10 @@ def compile_rule_to_sql(rule: RuleUnion, dataset: str, table: str) -> str:
 def compile_sweep_query(rules: List[RuleUnion], dataset: str, table: str) -> str:
     if not rules:
         raise ValueError("No rules provided for sweep compilation.")
-    subqueries = [compile_rule_to_sql(r, dataset, table) for r in rules]
+    # schema_conformance has no per-row metric a SELECT can produce; sentry checks
+    # it separately against bq.get_table_columns instead.
+    sql_rules = [r for r in rules if r.rule_type != "schema_conformance"]
+    if not sql_rules:
+        raise ValueError("No SQL-compilable rules provided for sweep compilation.")
+    subqueries = [compile_rule_to_sql(r, dataset, table) for r in sql_rules]
     return "\nUNION ALL\n".join(subqueries)

@@ -139,13 +139,12 @@ def inject_row_count_collapse(dataset: str, table: str = "orders", column: str =
     """
     execute_query(query)
 
-def inject_schema_drift(dataset: str, table: str = "products", column: str = "sku"):
-    """Scenario 7: Drops a column to simulate an upstream schema change. Note: rules.py
-    has no schema_drift rule_type, so no sweep can ever match this against a contract
-    rule -- it will always show up as an unmatched ground-truth fault in eval until a
-    schema-conformance rule type is added."""
+def inject_schema_drift(dataset: str, table: str = "order_items", column: str = "status"):
+    """Scenario 7: Drops a column to simulate an upstream schema change. Caught by a
+    schema_conformance rule (see rules.py/sentry.py), which checks the contract's
+    expected column list against bq.get_table_columns rather than a SELECT."""
     _ensure_snapshot(dataset, table)
-    log_ground_truth("schema_drift", table, column, "schema_drift")
+    log_ground_truth("schema_drift", table, column, "schema_conformance")
     query = f"""
     ALTER TABLE `{dataset}.{table}`
     DROP COLUMN {column};

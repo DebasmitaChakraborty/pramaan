@@ -1,0 +1,26 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "order_items",
+  "version": 1,
+  "rules": [
+    {
+      "rule_id": "check_order_items_sale_price_range",
+      "rule_type": "range",
+      "column": "sale_price",
+      "min_value": 0.0,
+      "max_value": 1200.0
+    },
+    {
+      "rule_id": "check_order_items_user_ref",
+      "rule_type": "referential_integrity",
+      "column": "user_id",
+      "parent_table": "pramaan_demo.users",
+      "parent_column": "id"
+    },
+    {
+      "rule_id": "check_order_items_schema",
+      "rule_type": "schema_conformance",
+      "expected_columns": ["id", "order_id", "user_id", "product_id", "inventory_item_id", "status", "created_at", "shipped_at", "delivered_at", "returned_at", "sale_price"]
+    }
+  ]
+}

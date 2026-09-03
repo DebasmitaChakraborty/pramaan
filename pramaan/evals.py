@@ -1,8 +1,9 @@
 from typing import List, Dict, Any
+from pydantic import BaseModel
 from pramaan.chaos import get_ground_truth_logs
 from pramaan.sentry import SweepResult
 
-class EvalMetrics(BaseModel if 'BaseModel' in globals() else object):
+class EvalMetrics(BaseModel):
     pass
 
 def evaluate_sweep_results(sweep_results: List[SweepResult]) -> Dict[str, Any]:

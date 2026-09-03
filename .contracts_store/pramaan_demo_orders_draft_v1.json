@@ -1,0 +1,30 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "orders",
+  "version": 1,
+  "rules": [
+    {
+      "rule_id": "check_orders_order_id_uniqueness",
+      "rule_type": "uniqueness",
+      "column": "order_id",
+      "max_duplicate_rate": 0.0
+    },
+    {
+      "rule_id": "check_orders_freshness",
+      "rule_type": "freshness",
+      "column": "created_at",
+      "max_lag_hours": 36.0
+    },
+    {
+      "rule_id": "check_orders_row_count",
+      "rule_type": "row_count_drift",
+      "column": "order_id",
+      "min_row_count": 50000
+    },
+    {
+      "rule_id": "check_orders_schema",
+      "rule_type": "schema_conformance",
+      "expected_columns": ["order_id", "user_id", "status", "gender", "created_at", "returned_at", "shipped_at", "delivered_at", "num_of_item"]
+    }
+  ]
+}
