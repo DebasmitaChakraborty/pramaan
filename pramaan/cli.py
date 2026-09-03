@@ -11,10 +11,14 @@ import re
 import sys
 
 from pramaan.chaos import (
-    get_ground_truth_logs,
+    inject_currency_swap,
     inject_null_flood,
     inject_referential_orphan,
+    inject_row_count_collapse,
+    inject_schema_drift,
     inject_silent_duplicate_load,
+    inject_stalled_partition,
+    restore,
 )
 from pramaan.contracts import CONTRACTS_DIR, approve_contract, save_draft_contract
 from pramaan.evals import evaluate_sweep_results
@@ -26,7 +30,11 @@ DEFAULT_DATASET = os.getenv("DEMO_DATASET", "pramaan_demo")
 INJECT_FUNCS = {
     "null_flood": inject_null_flood,
     "silent_duplicate_load": inject_silent_duplicate_load,
+    "currency_swap": inject_currency_swap,
+    "stalled_partition": inject_stalled_partition,
     "referential_orphan": inject_referential_orphan,
+    "row_count_collapse": inject_row_count_collapse,
+    "schema_drift": inject_schema_drift,
 }
 
 
@@ -70,16 +78,8 @@ def cmd_inject(args: argparse.Namespace) -> None:
 
 
 def cmd_revert(args: argparse.Namespace) -> None:
-    logs = get_ground_truth_logs()
-    entry = next((g for g in logs if g["fault_id"] == args.fault_id), None)
-    if entry is None:
-        sys.exit(f"No ground truth entry found for fault_id '{args.fault_id}'")
-    _print_json(entry)
-    sys.exit(
-        "pramaan.chaos exposes no undo/revert function for injected faults "
-        "(only inject_* and get_ground_truth_logs) -- nothing was reverted. "
-        "This subcommand cannot do more without new logic being added to chaos.py."
-    )
+    restore(args.dataset, args.table)
+    print(f"Restored {args.dataset}.{args.table} from its pre-fault snapshot and dropped the snapshot.")
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
@@ -125,8 +125,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_inject.add_argument("table")
     p_inject.set_defaults(func=cmd_inject)
 
-    p_revert = sub.add_parser("revert", help="Look up an injected fault by id")
-    p_revert.add_argument("fault_id")
+    p_revert = sub.add_parser("revert", help="Restore a table from its pre-fault snapshot")
+    p_revert.add_argument("table")
     p_revert.set_defaults(func=cmd_revert)
 
     p_eval = sub.add_parser("eval", help="Sweep every approved contract and score against ground truth")
