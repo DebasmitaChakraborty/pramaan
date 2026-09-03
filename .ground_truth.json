@@ -149,5 +149,68 @@
     "target_column": "email",
     "expected_rule_type": "null_rate",
     "injected_at": "2026-09-03T20:49:31.382526+00:00"
+  },
+  {
+    "fault_id": "fault_silent_duplicate_load_1788470627",
+    "run_id": "eada25c23099",
+    "scenario": "silent_duplicate_load",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "uniqueness",
+    "injected_at": "2026-09-03T21:23:47.122996+00:00"
+  },
+  {
+    "fault_id": "fault_stalled_partition_1788470777",
+    "run_id": "eada25c23099",
+    "scenario": "stalled_partition",
+    "table": "orders",
+    "target_column": "created_at",
+    "expected_rule_type": "freshness",
+    "injected_at": "2026-09-03T21:26:17.306625+00:00"
+  },
+  {
+    "fault_id": "fault_row_count_collapse_1788470866",
+    "run_id": "eada25c23099",
+    "scenario": "row_count_collapse",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "row_count_drift",
+    "injected_at": "2026-09-03T21:27:46.039169+00:00"
+  },
+  {
+    "fault_id": "fault_currency_swap_1788470979",
+    "run_id": "eada25c23099",
+    "scenario": "currency_swap",
+    "table": "order_items",
+    "target_column": "sale_price",
+    "expected_rule_type": "range",
+    "injected_at": "2026-09-03T21:29:39.444788+00:00"
+  },
+  {
+    "fault_id": "fault_referential_orphan_1788471124",
+    "run_id": "eada25c23099",
+    "scenario": "referential_orphan",
+    "table": "order_items",
+    "target_column": "user_id",
+    "expected_rule_type": "referential_integrity",
+    "injected_at": "2026-09-03T21:32:04.052407+00:00"
+  },
+  {
+    "fault_id": "fault_schema_drift_1788471251",
+    "run_id": "eada25c23099",
+    "scenario": "schema_drift",
+    "table": "order_items",
+    "target_column": "status",
+    "expected_rule_type": "schema_conformance",
+    "injected_at": "2026-09-03T21:34:11.085002+00:00"
+  },
+  {
+    "fault_id": "fault_null_flood_1788471304",
+    "run_id": "eada25c23099",
+    "scenario": "null_flood",
+    "table": "users",
+    "target_column": "email",
+    "expected_rule_type": "null_rate",
+    "injected_at": "2026-09-03T21:35:04.319184+00:00"
   }
 ]

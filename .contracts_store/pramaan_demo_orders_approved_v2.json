@@ -2,6 +2,8 @@
   "dataset": "pramaan_demo",
   "table": "orders",
   "version": 2,
+  "approved_by": "Debasmita",
+  "approved_at": "2026-09-03T21:22:19.969536+00:00",
   "rules": [
     {
       "rule_id": "rule_1",
