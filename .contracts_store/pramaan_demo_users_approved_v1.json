@@ -1,0 +1,15 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "users",
+  "version": 1,
+  "approved_by": "Debasmita",
+  "approved_at": "2026-08-24T18:24:58.668619+00:00",
+  "rules": [
+    {
+      "rule_id": "check_user_email_nulls",
+      "rule_type": "null_rate",
+      "column": "email",
+      "max_null_rate": 0.01
+    }
+  ]
+}

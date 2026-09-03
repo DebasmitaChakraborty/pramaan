@@ -1,0 +1,34 @@
+[
+  {
+    "fault_id": "fault_null_flood_1787595898",
+    "scenario": "null_flood",
+    "table": "users",
+    "target_column": "email",
+    "expected_rule_type": "null_rate",
+    "injected_at": "2026-08-24T18:24:58.668841+00:00"
+  },
+  {
+    "fault_id": "fault_null_flood_1787683903",
+    "scenario": "null_flood",
+    "table": "users",
+    "target_column": "email",
+    "expected_rule_type": "null_rate",
+    "injected_at": "2026-08-25T18:51:43.568466+00:00"
+  },
+  {
+    "fault_id": "fault_silent_duplicate_load_1787683922",
+    "scenario": "silent_duplicate_load",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "uniqueness",
+    "injected_at": "2026-08-25T18:52:02.942372+00:00"
+  },
+  {
+    "fault_id": "fault_referential_orphan_1787683936",
+    "scenario": "referential_orphan",
+    "table": "order_items",
+    "target_column": "user_id",
+    "expected_rule_type": "referential_integrity",
+    "injected_at": "2026-08-25T18:52:16.629323+00:00"
+  }
+]

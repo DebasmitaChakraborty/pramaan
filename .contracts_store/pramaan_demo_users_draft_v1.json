@@ -1,0 +1,13 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "users",
+  "version": 1,
+  "rules": [
+    {
+      "rule_id": "check_user_email_nulls",
+      "rule_type": "null_rate",
+      "column": "email",
+      "max_null_rate": 0.01
+    }
+  ]
+}
