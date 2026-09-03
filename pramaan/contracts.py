@@ -66,6 +66,16 @@ def approve_contract(dataset: str, table: str, draft_version: int, approved_by: 
     
     return approved
 
+def list_active_contract_tables(dataset: str) -> List[str]:
+    """Tables in `dataset` that have at least one approved contract."""
+    os.makedirs(CONTRACTS_DIR, exist_ok=True)
+    pattern = re.compile(rf"^{re.escape(dataset)}_(.+)_approved_v\d+\.json$")
+    return sorted({
+        m.group(1)
+        for f in os.listdir(CONTRACTS_DIR)
+        if (m := pattern.match(f))
+    })
+
 def load_active_contract(dataset: str, table: str) -> ApprovedContract:
     """Loads the latest approved contract. Fails if only draft exists (Invariant #3)."""
     os.makedirs(CONTRACTS_DIR, exist_ok=True)

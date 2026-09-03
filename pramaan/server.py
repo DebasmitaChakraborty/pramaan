@@ -3,8 +3,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 
+from pramaan.contracts import list_active_contract_tables, load_active_contract
 from pramaan.sentry import execute_sweep, SweepResult
 from pramaan.agent.agent import diagnose_violation
+
+DEMO_DATASET = os.getenv("DEMO_DATASET", "pramaan_demo")
 
 app = FastAPI(title="Pramaan Agentic Data Trust API", version="0.1.0")
 
@@ -22,6 +25,22 @@ class DiagnosisRequest(BaseModel):
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "project": os.getenv("GCP_PROJECT_ID", "pramaan-506517")}
+
+@app.get("/contracts")
+def list_contracts(dataset: str = DEMO_DATASET):
+    tables = list_active_contract_tables(dataset)
+    contracts = []
+    for table in tables:
+        c = load_active_contract(dataset, table)
+        contracts.append({
+            "table": table,
+            "version": c.version,
+            "approved_by": c.approved_by,
+            "approved_at": c.approved_at,
+            "rule_count": len(c.rules),
+            "rule_types": sorted({r["rule_type"] for r in c.rules}),
+        })
+    return {"dataset": dataset, "contracts": contracts}
 
 @app.post("/sweep", response_model=List[SweepResult])
 def run_sweep(req: SweepRequest):

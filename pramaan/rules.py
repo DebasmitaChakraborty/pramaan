@@ -155,14 +155,27 @@ def compile_rule_to_sql(rule: RuleUnion, dataset: str, table: str) -> str:
         FROM {full_table}
         """
     elif rule.rule_type == "row_count_drift":
+        # min_row_count is derived from an observed rows-per-day stat (see
+        # profiler.py), so the check must be per-day too, not COUNT(*) over
+        # the whole table -- otherwise the units don't match and the rule
+        # can never fire at realistic table sizes. Averages the last 3 fully
+        # completed days (today is excluded: it's a partial day and would
+        # chronically read as "low volume" until it ends).
+        recent_daily_counts = f"""
+            SELECT COUNT(*) AS daily_cnt
+            FROM {full_table}
+            WHERE DATE({rule.column}) >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
+              AND DATE({rule.column}) < CURRENT_DATE()
+            GROUP BY DATE({rule.column})
+        """
         return f"""
-        SELECT 
+        SELECT
             '{rule.rule_id}' AS rule_id,
             '{rule.rule_type}' AS rule_type,
-            CAST(COUNT(*) AS FLOAT64) AS metric_value,
+            (SELECT AVG(daily_cnt) FROM ({recent_daily_counts})) AS metric_value,
             {rule.min_row_count}.0 AS threshold,
-            (COUNT(*) < {rule.min_row_count}) AS is_violation
-        FROM {full_table}
+            ((SELECT AVG(daily_cnt) FROM ({recent_daily_counts})) < {rule.min_row_count}) AS is_violation
+        FROM (SELECT 1)
         """
     elif rule.rule_type == "regex_conformance":
         escaped_pattern = rule.pattern.replace("'", "\\'")

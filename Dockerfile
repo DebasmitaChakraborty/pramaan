@@ -8,6 +8,7 @@ ENV PYTHONPATH=/app
 
 COPY pyproject.toml .
 COPY pramaan/ ./pramaan/
+COPY .contracts_store/ ./.contracts_store/
 
 RUN pip install --no-cache-dir . uvicorn
 

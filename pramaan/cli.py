@@ -7,7 +7,6 @@ import argparse
 import getpass
 import json
 import os
-import re
 import sys
 import uuid
 
@@ -21,7 +20,7 @@ from pramaan.chaos import (
     inject_stalled_partition,
     restore,
 )
-from pramaan.contracts import CONTRACTS_DIR, approve_contract, save_draft_contract
+from pramaan.contracts import CONTRACTS_DIR, approve_contract, list_active_contract_tables, save_draft_contract
 from pramaan.evals import evaluate_sweep_results
 from pramaan.profiler import generate_draft_contract
 from pramaan.sentry import execute_sweep
@@ -92,16 +91,10 @@ def cmd_eval(args: argparse.Namespace) -> None:
         sys.exit("`eval` requires --run-id (the id shared with your `inject` calls)")
 
     dataset = args.dataset
-    pattern = re.compile(rf"^{re.escape(dataset)}_(.+)_approved_v\d+\.json$")
-    contracts_dir = CONTRACTS_DIR
-    tables = sorted({
-        m.group(1)
-        for f in os.listdir(contracts_dir)
-        if (m := pattern.match(f))
-    }) if os.path.isdir(contracts_dir) else []
+    tables = list_active_contract_tables(dataset)
 
     if not tables:
-        sys.exit(f"No approved contracts found in {contracts_dir} for dataset '{dataset}'")
+        sys.exit(f"No approved contracts found in {CONTRACTS_DIR} for dataset '{dataset}'")
 
     sweep_results_by_table = {table: execute_sweep(dataset, table) for table in tables}
 

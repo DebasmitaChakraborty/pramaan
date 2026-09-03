@@ -157,6 +157,22 @@ def detect_fk_candidates(dataset: str, table: str, column_stats: Dict[str, Dict[
             })
     return candidates
 
+def normalize_invariant_thresholds(rules: List[RuleUnion], column_stats: Dict[str, Dict[str, Any]]) -> None:
+    """Margin is for measured rates, not for invariants: a column observed at
+    null_rate 0.0 gets max_null_rate forced to 0.0, and a column observed at
+    distinct_ratio 1.0 (a key) gets max_duplicate_rate forced to 0.0 --
+    overriding whatever margin the model proposed. Mutates `rules` in place;
+    doesn't trust prompt compliance for this any more than for anything else
+    in this file."""
+    for rule in rules:
+        stats = column_stats.get(getattr(rule, "column", None))
+        if stats is None:
+            continue
+        if rule.rule_type == "null_rate" and stats.get("null_rate") == 0.0:
+            rule.max_null_rate = 0.0
+        elif rule.rule_type == "uniqueness" and stats.get("distinct_ratio") == 1.0:
+            rule.max_duplicate_rate = 0.0
+
 def validate_rule_has_supporting_stat(
     rule: RuleUnion,
     column_stats: Dict[str, Dict[str, Any]],
@@ -260,14 +276,19 @@ def generate_draft_contract(dataset: str, table: str) -> Tuple[DraftContract, Op
 
     - null_rate: fields rule_id, rule_type, column, max_null_rate. Derive
       max_null_rate from the column's observed null_rate plus a small margin
-      (e.g. observed null_rate 0.18 -> max_null_rate around 0.25).
-      max_null_rate MUST be clamped to the range 0.0-1.0 -- never propose a
-      value above 1.0 even if the margin would push it over.
+      (e.g. observed null_rate 0.18 -> max_null_rate around 0.25). EXCEPTION:
+      if the observed null_rate is exactly 0.0, propose max_null_rate = 0.0
+      with NO margin -- that's an invariant (this column is never null), not
+      a measured rate to pad. max_null_rate MUST be clamped to 0.0-1.0.
     - uniqueness: fields rule_id, rule_type, column, max_duplicate_rate.
       Derive max_duplicate_rate from the column's observed distinct_ratio
-      (roughly 1 - distinct_ratio, plus a small margin). max_duplicate_rate
-      MUST be clamped to the range 0.0-1.0 -- never propose a value above 1.0
-      even if the margin would push it over.
+      (roughly 1 - distinct_ratio, plus a small margin). EXCEPTION: if the
+      observed distinct_ratio is exactly 1.0 (the column is a key), propose
+      max_duplicate_rate = 0.0 with NO margin -- that's an invariant (this
+      column is always unique), not a measured rate to pad. Only propose
+      uniqueness for columns that are meant to be unique or near-unique
+      (keys), not for low-cardinality/categorical columns where duplication
+      is normal. max_duplicate_rate MUST be clamped to 0.0-1.0.
     - range: fields rule_id, rule_type, column, min_value, max_value. Use the
       column's observed p1/p99, widened by a small margin. Only for numeric
       columns that hold real measured values, not identifiers.
@@ -280,11 +301,15 @@ def generate_draft_contract(dataset: str, table: str) -> Tuple[DraftContract, Op
       shipment), do NOT propose a freshness rule for it; there is no
       meaningful staleness threshold for a column whose values are inherently
       forward-dated.
-    - row_count_drift: fields rule_id, rule_type, column, min_row_count.
-      Derive min_row_count from the observed rows_per_day_min (a conservative
-      floor below normal daily volume) -- only if rows_per_day stats are
-      available for some timestamp column; "column" here should be that
-      timestamp column even though the check itself is table-wide.
+    - row_count_drift: fields rule_id, rule_type, column, min_row_count. The
+      check compares min_row_count against the AVERAGE row count over the
+      last 3 fully-completed days (grouped by DATE(column)), NOT the table's
+      total row count -- so min_row_count MUST come from the observed
+      rows_per_day stats (a conservative floor a bit below
+      rows_per_day_min), never from a total-row-count idea. "column" must be
+      the timestamp column whose rows_per_day stats you're using -- the
+      check groups by DATE(column). Only propose this if rows_per_day stats
+      are available for some timestamp column.
     - referential_integrity: fields rule_id, rule_type, column, parent_table,
       parent_column. Only for columns listed in the verified foreign-key
       candidates above. Use parent_table/parent_column exactly as given
@@ -333,6 +358,8 @@ def generate_draft_contract(dataset: str, table: str) -> Tuple[DraftContract, Op
         draft = DraftContract.model_validate(raw_json)
     except Exception as e:
         raise ValueError(f"Profiler failed to produce a valid typed contract. Error: {e}\nRaw Output: {response.text}")
+
+    normalize_invariant_thresholds(draft.rules, column_stats)
 
     for rule in draft.rules:
         validate_rule_has_supporting_stat(rule, column_stats, fk_candidates)
