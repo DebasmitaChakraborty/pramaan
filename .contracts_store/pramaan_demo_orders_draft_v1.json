@@ -4,27 +4,76 @@
   "version": 1,
   "rules": [
     {
-      "rule_id": "check_orders_order_id_uniqueness",
+      "rule_id": "rule_1",
+      "rule_type": "null_rate",
+      "column": "order_id",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_2",
       "rule_type": "uniqueness",
       "column": "order_id",
       "max_duplicate_rate": 0.0
     },
     {
-      "rule_id": "check_orders_freshness",
+      "rule_id": "rule_3",
+      "rule_type": "null_rate",
+      "column": "user_id",
+      "max_null_rate": 0.01
+    },
+    {
+      "rule_id": "rule_4",
+      "rule_type": "null_rate",
+      "column": "status",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_5",
+      "rule_type": "null_rate",
+      "column": "gender",
+      "max_null_rate": 0.2
+    },
+    {
+      "rule_id": "rule_6",
+      "rule_type": "null_rate",
+      "column": "created_at",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_7",
       "rule_type": "freshness",
       "column": "created_at",
-      "max_lag_hours": 36.0
+      "max_lag_hours": 24.0
     },
     {
-      "rule_id": "check_orders_row_count",
+      "rule_id": "rule_8",
+      "rule_type": "null_rate",
+      "column": "returned_at",
+      "max_null_rate": 0.9
+    },
+    {
+      "rule_id": "rule_9",
+      "rule_type": "null_rate",
+      "column": "shipped_at",
+      "max_null_rate": 0.2
+    },
+    {
+      "rule_id": "rule_10",
+      "rule_type": "null_rate",
+      "column": "delivered_at",
+      "max_null_rate": 0.3
+    },
+    {
+      "rule_id": "rule_11",
+      "rule_type": "null_rate",
+      "column": "num_of_item",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_12",
       "rule_type": "row_count_drift",
       "column": "order_id",
-      "min_row_count": 50000
-    },
-    {
-      "rule_id": "check_orders_schema",
-      "rule_type": "schema_conformance",
-      "expected_columns": ["order_id", "user_id", "status", "gender", "created_at", "returned_at", "shipped_at", "delivered_at", "num_of_item"]
+      "min_row_count": 100
     }
   ]
 }

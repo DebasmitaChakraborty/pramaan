@@ -44,11 +44,12 @@ def _print_json(obj) -> None:
 
 
 def cmd_propose(args: argparse.Namespace) -> None:
-    draft = generate_draft_contract(args.dataset, args.table)
+    draft, bytes_billed = generate_draft_contract(args.dataset, args.table)
     path = save_draft_contract(draft)
     contract_id = f"{draft.dataset}:{draft.table}:{draft.version}"
     print(f"Draft contract saved to {path}")
     print(f"contract_id: {contract_id}")
+    print(f"profile query bytes billed: {bytes_billed}")
     _print_json(draft.model_dump())
 
 

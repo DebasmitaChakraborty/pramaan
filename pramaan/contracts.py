@@ -1,9 +1,12 @@
 import json
 import os
+import re
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from pydantic import BaseModel
-from pramaan.profiler import DraftContract
+
+if TYPE_CHECKING:
+    from pramaan.profiler import DraftContract
 
 CONTRACTS_DIR = os.getenv("CONTRACTS_DIR", ".contracts_store")
 
@@ -19,7 +22,20 @@ def _get_contract_path(dataset: str, table: str, status: str = "draft", version:
     os.makedirs(CONTRACTS_DIR, exist_ok=True)
     return os.path.join(CONTRACTS_DIR, f"{dataset}_{table}_{status}_v{version}.json")
 
-def save_draft_contract(draft: DraftContract) -> str:
+def get_next_version(dataset: str, table: str) -> int:
+    """Next version number for dataset.table, considering both draft and
+    approved files, so a new propose never collides with or silently
+    overwrites an existing draft or approved contract."""
+    os.makedirs(CONTRACTS_DIR, exist_ok=True)
+    pattern = re.compile(rf"^{re.escape(dataset)}_{re.escape(table)}_(?:draft|approved)_v(\d+)\.json$")
+    versions = [
+        int(m.group(1))
+        for f in os.listdir(CONTRACTS_DIR)
+        if (m := pattern.match(f))
+    ]
+    return max(versions, default=0) + 1
+
+def save_draft_contract(draft: "DraftContract") -> str:
     """Saves a draft contract version to the store."""
     path = _get_contract_path(draft.dataset, draft.table, status="draft", version=draft.version)
     with open(path, "w") as f:

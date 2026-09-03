@@ -14,6 +14,7 @@ class BaseRule(BaseModel):
     rule_id: str
     rule_type: str
     column: str
+    rationale: Optional[str] = None
 
     @field_validator("column")
     def check_column(cls, v):
@@ -67,6 +68,7 @@ class SchemaConformanceRule(BaseModel):
     rule_id: str
     rule_type: Literal["schema_conformance"] = "schema_conformance"
     expected_columns: List[str]
+    rationale: Optional[str] = None
 
 RuleUnion = Union[
     NullRateRule,

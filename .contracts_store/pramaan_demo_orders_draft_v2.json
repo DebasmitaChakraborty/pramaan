@@ -1,0 +1,179 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "orders",
+  "version": 2,
+  "rules": [
+    {
+      "rule_id": "rule_1",
+      "rule_type": "schema_conformance",
+      "expected_columns": [
+        "order_id",
+        "user_id",
+        "status",
+        "gender",
+        "created_at",
+        "returned_at",
+        "shipped_at",
+        "delivered_at",
+        "num_of_item"
+      ],
+      "rationale": "Schema conformance rule based on the observed schema."
+    },
+    {
+      "rule_id": "rule_2",
+      "rule_type": "null_rate",
+      "column": "num_of_item",
+      "rationale": "observed null_rate was 0.0 for num_of_item.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_3",
+      "rule_type": "uniqueness",
+      "column": "num_of_item",
+      "rationale": "observed distinct_ratio was 3.835826620636747e-05 for num_of_item.",
+      "max_duplicate_rate": 1.0
+    },
+    {
+      "rule_id": "rule_4",
+      "rule_type": "range",
+      "column": "num_of_item",
+      "rationale": "observed p1 was 1.0 and p99 was 4.0 for num_of_item.",
+      "min_value": 0.0,
+      "max_value": 5.0
+    },
+    {
+      "rule_id": "rule_5",
+      "rule_type": "null_rate",
+      "column": "gender",
+      "rationale": "observed null_rate was 0.0 for gender.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_6",
+      "rule_type": "uniqueness",
+      "column": "gender",
+      "rationale": "observed distinct_ratio was 1.9179133103183735e-05 for gender.",
+      "max_duplicate_rate": 1.0
+    },
+    {
+      "rule_id": "rule_7",
+      "rule_type": "null_rate",
+      "column": "created_at",
+      "rationale": "observed null_rate was 0.0 for created_at.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_8",
+      "rule_type": "uniqueness",
+      "column": "created_at",
+      "rationale": "observed distinct_ratio was 0.9994246260069045 for created_at.",
+      "max_duplicate_rate": 0.0105753739930955
+    },
+    {
+      "rule_id": "rule_9",
+      "rule_type": "freshness",
+      "column": "created_at",
+      "rationale": "observed hours_since_max was 20.0 for created_at.",
+      "max_lag_hours": 44.0
+    },
+    {
+      "rule_id": "rule_10",
+      "rule_type": "null_rate",
+      "column": "order_id",
+      "rationale": "observed null_rate was 0.0 for order_id.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_11",
+      "rule_type": "uniqueness",
+      "column": "order_id",
+      "rationale": "observed distinct_ratio was 1.0 for order_id.",
+      "max_duplicate_rate": 0.01
+    },
+    {
+      "rule_id": "rule_12",
+      "rule_type": "null_rate",
+      "column": "shipped_at",
+      "rationale": "observed null_rate was 0.3502301495972382 for shipped_at.",
+      "max_null_rate": 0.4002301495972382
+    },
+    {
+      "rule_id": "rule_13",
+      "rule_type": "uniqueness",
+      "column": "shipped_at",
+      "rationale": "observed distinct_ratio was 0.6495588799386268 for shipped_at.",
+      "max_duplicate_rate": 0.3604411200613732
+    },
+    {
+      "rule_id": "rule_14",
+      "rule_type": "null_rate",
+      "column": "status",
+      "rationale": "observed null_rate was 0.0 for status.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_15",
+      "rule_type": "uniqueness",
+      "column": "status",
+      "rationale": "observed distinct_ratio was 4.794783275795934e-05 for status.",
+      "max_duplicate_rate": 1.0
+    },
+    {
+      "rule_id": "rule_16",
+      "rule_type": "null_rate",
+      "column": "returned_at",
+      "rationale": "observed null_rate was 0.8997314921365555 for returned_at.",
+      "max_null_rate": 0.9497314921365555
+    },
+    {
+      "rule_id": "rule_17",
+      "rule_type": "uniqueness",
+      "column": "returned_at",
+      "rationale": "observed distinct_ratio was 0.10026850786344457 for returned_at.",
+      "max_duplicate_rate": 0.9097314921365554
+    },
+    {
+      "rule_id": "rule_18",
+      "rule_type": "null_rate",
+      "column": "delivered_at",
+      "rationale": "observed null_rate was 0.6490698120444955 for delivered_at.",
+      "max_null_rate": 0.6990698120444955
+    },
+    {
+      "rule_id": "rule_19",
+      "rule_type": "uniqueness",
+      "column": "delivered_at",
+      "rationale": "observed distinct_ratio was 0.35088224012274644 for delivered_at.",
+      "max_duplicate_rate": 0.6591177598772536
+    },
+    {
+      "rule_id": "rule_20",
+      "rule_type": "null_rate",
+      "column": "user_id",
+      "rationale": "observed null_rate was 0.0 for user_id.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_21",
+      "rule_type": "uniqueness",
+      "column": "user_id",
+      "rationale": "observed distinct_ratio was 0.672957422324511 for user_id.",
+      "max_duplicate_rate": 0.337042577675489
+    },
+    {
+      "rule_id": "rule_22",
+      "rule_type": "row_count_drift",
+      "column": "created_at",
+      "rationale": "observed rows_per_day_min for created_at was 184.0.",
+      "min_row_count": 134
+    },
+    {
+      "rule_id": "rule_23",
+      "rule_type": "referential_integrity",
+      "column": "user_id",
+      "rationale": "observed match_rate for user_id to pramaan_demo.users.id was 1.0.",
+      "parent_table": "pramaan_demo.users",
+      "parent_column": "id"
+    }
+  ]
+}
