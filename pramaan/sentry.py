@@ -1,6 +1,6 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
 from pydantic import BaseModel
-from pramaan.bq import execute_query, get_table_columns
+from pramaan.bq import execute_query, execute_query_job, get_table_columns
 from pramaan.contracts import load_active_contract
 from pramaan.rules import compile_sweep_query, RuleUnion, NullRateRule, UniquenessRule, ReferentialIntegrityRule, RangeRule, SetMembershipRule, FreshnessRule, RowCountDriftRule, RegexConformanceRule, SchemaConformanceRule
 
@@ -70,3 +70,33 @@ def execute_sweep(dataset: str, table: str) -> List[SweepResult]:
             results.extend(check_schema_conformance(rule, actual_columns))
 
     return results
+
+def execute_sweep_with_timing(dataset: str, table: str) -> Tuple[List[SweepResult], Optional[Any], Optional[Any]]:
+    """Like execute_sweep, but also returns (sql_job_ended, schema_job_ended) --
+    the BigQuery job completion timestamps for the SQL sweep query and the
+    schema_conformance column-list query, respectively (None if that branch
+    didn't run). Lets callers measure detection latency without folding in
+    snapshot/restore time."""
+    contract = load_active_contract(dataset, table)
+    parsed_rules = [parse_rule_dict(r) for r in contract.rules]
+
+    sql_rules = [r for r in parsed_rules if r.rule_type != "schema_conformance"]
+    schema_rules = [r for r in parsed_rules if r.rule_type == "schema_conformance"]
+
+    results: List[SweepResult] = []
+    sql_job_ended = None
+    schema_job_ended = None
+
+    if sql_rules:
+        sweep_sql = compile_sweep_query(sql_rules, dataset, table)
+        job = execute_query_job(sweep_sql)
+        sql_job_ended = job.ended
+        results.extend(SweepResult(**dict(row)) for row in job.result())
+
+    if schema_rules:
+        actual_columns, schema_job_ended = get_table_columns(dataset, table, return_job=True)
+        actual_column_names = [c["column_name"] for c in actual_columns]
+        for rule in schema_rules:
+            results.extend(check_schema_conformance(rule, actual_column_names))
+
+    return results, sql_job_ended, schema_job_ended

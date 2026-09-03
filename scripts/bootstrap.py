@@ -8,20 +8,20 @@ from pramaan.bq import get_bq_client
 DEMO_DATASET = os.getenv("DEMO_DATASET", "pramaan_demo")
 
 TABLE_QUERIES = {
-    "users": """
-        CREATE OR REPLACE TABLE `{dataset}.users` AS
-        SELECT * FROM `bigquery-public-data.thelook_ecommerce.users`
-        WHERE created_at >= '2023-01-01';
-    """,
-    "products": """
-        CREATE OR REPLACE TABLE `{dataset}.products` AS
-        SELECT * FROM `bigquery-public-data.thelook_ecommerce.products`;
-    """,
     "orders": """
         CREATE OR REPLACE TABLE `{dataset}.orders`
         PARTITION BY DATE(created_at) AS
         SELECT * FROM `bigquery-public-data.thelook_ecommerce.orders`
         WHERE created_at >= '2023-01-01';
+    """,
+    "users": """
+        CREATE OR REPLACE TABLE `{dataset}.users` AS
+        SELECT * FROM `bigquery-public-data.thelook_ecommerce.users`
+        WHERE id IN (SELECT DISTINCT user_id FROM `{dataset}.orders`);
+    """,
+    "products": """
+        CREATE OR REPLACE TABLE `{dataset}.products` AS
+        SELECT * FROM `bigquery-public-data.thelook_ecommerce.products`;
     """,
     "order_items": """
         CREATE OR REPLACE TABLE `{dataset}.order_items`

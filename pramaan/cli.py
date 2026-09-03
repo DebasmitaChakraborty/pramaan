@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import uuid
 
 from pramaan.chaos import (
     inject_currency_swap,
@@ -73,8 +74,11 @@ def cmd_inject(args: argparse.Namespace) -> None:
     func = INJECT_FUNCS.get(args.fault_kind)
     if func is None:
         sys.exit(f"Unknown fault_kind '{args.fault_kind}'. Choose from: {', '.join(INJECT_FUNCS)}")
-    func(args.dataset, args.table)
+    run_id = args.run_id or uuid.uuid4().hex[:12]
+    entry = func(args.dataset, args.table, run_id=run_id)
     print(f"Injected {args.fault_kind} into {args.dataset}.{args.table}")
+    print(f"run_id: {run_id}  (pass --run-id {run_id} to `sweep`/`eval` to group with this fault)")
+    _print_json(entry)
 
 
 def cmd_revert(args: argparse.Namespace) -> None:
@@ -83,6 +87,9 @@ def cmd_revert(args: argparse.Namespace) -> None:
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
+    if not args.run_id:
+        sys.exit("`eval` requires --run-id (the id shared with your `inject` calls)")
+
     dataset = args.dataset
     pattern = re.compile(rf"^{re.escape(dataset)}_(.+)_approved_v\d+\.json$")
     contracts_dir = CONTRACTS_DIR
@@ -95,16 +102,15 @@ def cmd_eval(args: argparse.Namespace) -> None:
     if not tables:
         sys.exit(f"No approved contracts found in {contracts_dir} for dataset '{dataset}'")
 
-    all_results = []
-    for table in tables:
-        all_results.extend(execute_sweep(dataset, table))
+    sweep_results_by_table = {table: execute_sweep(dataset, table) for table in tables}
 
-    _print_json(evaluate_sweep_results(all_results))
+    _print_json(evaluate_sweep_results(sweep_results_by_table, run_id=args.run_id))
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pramaan", description="Pramaan data trust CLI")
     parser.add_argument("--dataset", default=DEFAULT_DATASET, help=f"BigQuery dataset (default: {DEFAULT_DATASET})")
+    parser.add_argument("--run-id", default=None, help="Shared id correlating inject/sweep/eval into one run. `inject` generates one if omitted and prints it; `eval` requires it.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_propose = sub.add_parser("propose", help="Profile a table and draft a contract")
