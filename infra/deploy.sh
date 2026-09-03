@@ -13,7 +13,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --image "gcr.io/${PROJECT_ID}/${SERVICE_NAME}:latest" \
   --platform managed \
   --region ${REGION} \
-  --no-allow-unauthenticated \
+  --allow-unauthenticated \
   --set-env-vars "GCP_PROJECT_ID=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_LOCATION=${REGION}" \
   --memory 1Gi \
   --concurrency 80 \
