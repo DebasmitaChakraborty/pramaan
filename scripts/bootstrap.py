@@ -27,7 +27,7 @@ TABLE_QUERIES = {
         CREATE OR REPLACE TABLE `{dataset}.order_items`
         PARTITION BY DATE(created_at) AS
         SELECT * FROM `bigquery-public-data.thelook_ecommerce.order_items`
-        WHERE created_at >= '2023-01-01';
+        WHERE order_id IN (SELECT order_id FROM `{dataset}.orders`);
     """
 }
 
