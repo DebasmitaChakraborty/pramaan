@@ -2,7 +2,7 @@
   "dataset": "pramaan_demo",
   "table": "orders",
   "version": 4,
-  "approved_by": "Debasmita (via Claude Code migration: rule_13 min_row_count -> min_ratio schema fix)",
+  "approved_by": "Debasmita",
   "approved_at": "2026-09-09T15:41:32.462955+00:00",
   "rules": [
     {

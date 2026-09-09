@@ -143,5 +143,31 @@ bash infra/deploy.sh   # gcloud builds submit + gcloud run deploy (Cloud Run, pu
 ```
 
 Service: `pramaan-engine` (`us-central1`), public (`--allow-unauthenticated`).
-The container image bundles `.contracts_store/`, so a contract approved
-locally isn't live until the next deploy.
+The container image bundles `.contracts_store/` and `scripts/`, so a
+contract approved locally isn't live until the next deploy.
+
+## Scheduling
+
+`pramaan_demo` is a frozen copy of the continuously-updated
+`bigquery-public-data.thelook_ecommerce` dataset, so its freshness rule
+(`orders.created_at`, 25h) ages past its threshold on its own — this is what
+made the rule trip at baseline in the first place (see "Rule design notes"
+above). Two Cloud Scheduler jobs keep it truthful without ever touching the
+threshold:
+
+```bash
+bash infra/schedule.sh   # idempotent; re-run after infra/deploy.sh ships a new image
+```
+
+| Job | Type | Schedule (UTC) | What it does |
+|---|---|---|---|
+| `pramaan-refresh` | Cloud Run Job | — | Runs `scripts/bootstrap.py build` from the same image as the `pramaan-engine` service, using its service account. 15 min task timeout. |
+| `pramaan-refresh-daily` | Cloud Scheduler | `0 20 * * *` (01:30 IST) | POSTs to the Cloud Run Jobs REST `:run` endpoint for `pramaan-refresh`, authenticated with an OAuth token from the same service account (granted `roles/run.invoker` on the job). |
+| `pramaan-sweep-daily` | Cloud Scheduler | `30 20 * * *` (30 min after the refresh, so it has finished) | POSTs `{"dataset":"pramaan_demo","table":"orders"}` to the live `/sweep` endpoint directly — no OAuth needed, `/sweep` is `--allow-unauthenticated`. |
+
+```bash
+gcloud run jobs execute pramaan-refresh --region us-central1        # run the refresh manually
+gcloud scheduler jobs run pramaan-refresh-daily --location us-central1  # force a scheduled refresh
+gcloud scheduler jobs run pramaan-sweep-daily --location us-central1    # force a scheduled sweep
+gcloud scheduler jobs list --location us-central1                    # list both jobs
+```
