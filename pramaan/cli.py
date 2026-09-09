@@ -10,32 +10,13 @@ import os
 import sys
 import uuid
 
-from pramaan.chaos import (
-    inject_currency_swap,
-    inject_null_flood,
-    inject_referential_orphan,
-    inject_row_count_collapse,
-    inject_schema_drift,
-    inject_silent_duplicate_load,
-    inject_stalled_partition,
-    restore,
-)
+from pramaan.chaos import INJECT_FUNCS, restore
 from pramaan.contracts import CONTRACTS_DIR, approve_contract, list_active_contract_tables, save_draft_contract
-from pramaan.evals import evaluate_sweep_results
+from pramaan.evals import FAULT_ORDER, evaluate_sweep_results, run_fault_matrix
 from pramaan.profiler import generate_draft_contract
 from pramaan.sentry import execute_sweep
 
 DEFAULT_DATASET = os.getenv("DEMO_DATASET", "pramaan_demo")
-
-INJECT_FUNCS = {
-    "null_flood": inject_null_flood,
-    "silent_duplicate_load": inject_silent_duplicate_load,
-    "currency_swap": inject_currency_swap,
-    "stalled_partition": inject_stalled_partition,
-    "referential_orphan": inject_referential_orphan,
-    "row_count_collapse": inject_row_count_collapse,
-    "schema_drift": inject_schema_drift,
-}
 
 
 def _print_json(obj) -> None:
@@ -101,6 +82,13 @@ def cmd_eval(args: argparse.Namespace) -> None:
     _print_json(evaluate_sweep_results(sweep_results_by_table, run_id=args.run_id))
 
 
+def cmd_eval_matrix(args: argparse.Namespace) -> None:
+    run_id = args.run_id or uuid.uuid4().hex[:12]
+    fault_kinds = args.faults.split(",") if args.faults else None
+    report = run_fault_matrix(args.dataset, run_id=run_id, fault_kinds=fault_kinds)
+    _print_json(report)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pramaan", description="Pramaan data trust CLI")
     parser.add_argument("--dataset", default=DEFAULT_DATASET, help=f"BigQuery dataset (default: {DEFAULT_DATASET})")
@@ -131,6 +119,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_eval = sub.add_parser("eval", help="Sweep every approved contract and score against ground truth")
     p_eval.set_defaults(func=cmd_eval)
+
+    p_eval_matrix = sub.add_parser(
+        "eval-matrix",
+        help="Run the fault matrix with per-fault isolation (inject/sweep/score/restore, one fault at a time)",
+    )
+    p_eval_matrix.add_argument(
+        "--faults", default=None,
+        help=f"Comma-separated fault_kinds to run (default: all, in order: {','.join(FAULT_ORDER)})",
+    )
+    p_eval_matrix.set_defaults(func=cmd_eval_matrix)
 
     return parser
 

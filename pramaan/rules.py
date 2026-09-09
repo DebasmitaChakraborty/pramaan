@@ -55,7 +55,7 @@ class FreshnessRule(BaseRule):
 
 class RowCountDriftRule(BaseRule):
     rule_type: Literal["row_count_drift"] = "row_count_drift"
-    min_row_count: int
+    min_ratio: float = Field(..., ge=0.0)
 
 class RegexConformanceRule(BaseRule):
     rule_type: Literal["regex_conformance"] = "regex_conformance"
@@ -155,26 +155,41 @@ def compile_rule_to_sql(rule: RuleUnion, dataset: str, table: str) -> str:
         FROM {full_table}
         """
     elif rule.rule_type == "row_count_drift":
-        # min_row_count is derived from an observed rows-per-day stat (see
-        # profiler.py), so the check must be per-day too, not COUNT(*) over
-        # the whole table -- otherwise the units don't match and the rule
-        # can never fire at realistic table sizes. Averages the last 3 fully
-        # completed days (today is excluded: it's a partial day and would
-        # chronically read as "low volume" until it ends).
-        recent_daily_counts = f"""
-            SELECT COUNT(*) AS daily_cnt
-            FROM {full_table}
-            WHERE DATE({rule.column}) >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
-              AND DATE({rule.column}) < CURRENT_DATE()
-            GROUP BY DATE({rule.column})
-        """
+        # Anchored to the data's own timeline, not the wall clock, so this is
+        # correct both for a live pipeline and for a frozen/static snapshot
+        # (e.g. a demo table copied from a public dataset): "latest day" is
+        # the most recent COMPLETE calendar day present in `column` --
+        # MAX(DATE(column)) minus one day, never MAX(DATE(column)) itself.
+        # The single most recent day present is always a partial day (still
+        # being written to on a live table; a trailing partial slice on a
+        # frozen snapshot copied mid-day) and would chronically read as a
+        # collapse otherwise. metric_value is the ratio of that complete
+        # day's row count to the AVERAGE row count of the days immediately
+        # before it (the baseline) -- a value near 1.0 is normal, a value
+        # near 0 means the latest complete day's load collapsed relative to
+        # recent history.
+        latest_day_expr = f"(SELECT DATE_SUB(MAX(DATE({rule.column})), INTERVAL 1 DAY) FROM {full_table})"
+        latest_count_expr = f"""(
+            SELECT COUNT(*) FROM {full_table}
+            WHERE DATE({rule.column}) = {latest_day_expr}
+        )"""
+        baseline_avg_expr = f"""(
+            SELECT AVG(daily_cnt) FROM (
+                SELECT COUNT(*) AS daily_cnt
+                FROM {full_table}
+                WHERE DATE({rule.column}) < {latest_day_expr}
+                  AND DATE({rule.column}) >= DATE_SUB({latest_day_expr}, INTERVAL 3 DAY)
+                GROUP BY DATE({rule.column})
+            )
+        )"""
+        metric_expr = f"SAFE_DIVIDE({latest_count_expr}, {baseline_avg_expr})"
         return f"""
         SELECT
             '{rule.rule_id}' AS rule_id,
             '{rule.rule_type}' AS rule_type,
-            (SELECT AVG(daily_cnt) FROM ({recent_daily_counts})) AS metric_value,
-            {rule.min_row_count}.0 AS threshold,
-            ((SELECT AVG(daily_cnt) FROM ({recent_daily_counts})) < {rule.min_row_count}) AS is_violation
+            {metric_expr} AS metric_value,
+            {rule.min_ratio} AS threshold,
+            ({metric_expr} < {rule.min_ratio}) AS is_violation
         FROM (SELECT 1)
         """
     elif rule.rule_type == "regex_conformance":

@@ -301,15 +301,21 @@ def generate_draft_contract(dataset: str, table: str) -> Tuple[DraftContract, Op
       shipment), do NOT propose a freshness rule for it; there is no
       meaningful staleness threshold for a column whose values are inherently
       forward-dated.
-    - row_count_drift: fields rule_id, rule_type, column, min_row_count. The
-      check compares min_row_count against the AVERAGE row count over the
-      last 3 fully-completed days (grouped by DATE(column)), NOT the table's
-      total row count -- so min_row_count MUST come from the observed
-      rows_per_day stats (a conservative floor a bit below
-      rows_per_day_min), never from a total-row-count idea. "column" must be
-      the timestamp column whose rows_per_day stats you're using -- the
-      check groups by DATE(column). Only propose this if rows_per_day stats
-      are available for some timestamp column.
+    - row_count_drift: fields rule_id, rule_type, column, min_ratio. The
+      check anchors to the data, not the clock: it takes the latest COMPLETE
+      calendar day present in `column` (the day before the most recent day
+      present, since the most recent day is always partial) and compares
+      that day's row count to the AVERAGE row count of the days immediately
+      before it, flagging a violation when that ratio falls below min_ratio
+      -- this makes the rule correct for both a live pipeline and a frozen
+      snapshot. Derive
+      min_ratio as a conservative floor below 1.0 (e.g. 0.5, flagging a 50%+
+      single-day volume drop relative to recent history), using the observed
+      rows_per_day stats only as a sanity check that daily volume is roughly
+      stable enough for the ratio to be meaningful. "column" must be the
+      timestamp column whose rows_per_day stats you're using -- the check
+      groups by DATE(column). Only propose this if rows_per_day stats are
+      available for some timestamp column.
     - referential_integrity: fields rule_id, rule_type, column, parent_table,
       parent_column. Only for columns listed in the verified foreign-key
       candidates above. Use parent_table/parent_column exactly as given

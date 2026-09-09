@@ -1,0 +1,123 @@
+{
+  "dataset": "pramaan_demo",
+  "table": "orders",
+  "version": 4,
+  "rules": [
+    {
+      "rule_id": "rule_1",
+      "rule_type": "null_rate",
+      "column": "order_id",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_2",
+      "rule_type": "null_rate",
+      "column": "user_id",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_3",
+      "rule_type": "null_rate",
+      "column": "status",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_4",
+      "rule_type": "null_rate",
+      "column": "gender",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_5",
+      "rule_type": "null_rate",
+      "column": "num_of_item",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_6",
+      "rule_type": "null_rate",
+      "column": "delivered_at",
+      "rationale": "observed null_rate was 0.6490698120444955 for this column; 0.7 gives headroom.",
+      "max_null_rate": 0.7
+    },
+    {
+      "rule_id": "rule_7",
+      "rule_type": "null_rate",
+      "column": "returned_at",
+      "rationale": "observed null_rate was 0.8997314921365555 for this column; 0.95 gives headroom.",
+      "max_null_rate": 0.95
+    },
+    {
+      "rule_id": "rule_8",
+      "rule_type": "null_rate",
+      "column": "created_at",
+      "rationale": "observed null_rate was 0.0 for this column, indicating it is never null.",
+      "max_null_rate": 0.0
+    },
+    {
+      "rule_id": "rule_9",
+      "rule_type": "null_rate",
+      "column": "shipped_at",
+      "rationale": "observed null_rate was 0.3502301495972382 for this column; 0.4 gives headroom.",
+      "max_null_rate": 0.4
+    },
+    {
+      "rule_id": "rule_10",
+      "rule_type": "uniqueness",
+      "column": "order_id",
+      "rationale": "observed distinct_ratio was 1.0 for this column, indicating it is always unique.",
+      "max_duplicate_rate": 0.0
+    },
+    {
+      "rule_id": "rule_11",
+      "rule_type": "range",
+      "column": "num_of_item",
+      "rationale": "observed p1 was 1.0 and p99 was 4.0 for this column; 1.0-4.0 defines the expected range.",
+      "min_value": 1.0,
+      "max_value": 4.0
+    },
+    {
+      "rule_id": "rule_12",
+      "rule_type": "freshness",
+      "column": "created_at",
+      "rationale": "observed hours_since_max was 21.0 for this column; 25.0 gives headroom.",
+      "max_lag_hours": 25.0
+    },
+    {
+      "rule_id": "rule_13",
+      "rule_type": "row_count_drift",
+      "column": "created_at",
+      "rationale": "migrated from v3's min_row_count=150 (a per-day floor derived from rows_per_day_min=184.0) to the ratio-based check: min_ratio=0.5 is a conservative floor flagging a 50%+ single-day volume drop relative to the prior days' average, applied to the last COMPLETE calendar day present in created_at vs. the average of the days immediately before it.",
+      "min_ratio": 0.5
+    },
+    {
+      "rule_id": "rule_14",
+      "rule_type": "referential_integrity",
+      "column": "user_id",
+      "rationale": "observed match_rate was 1.0 for the foreign key relationship between user_id and pramaan_demo.users.id.",
+      "parent_table": "pramaan_demo.users",
+      "parent_column": "id"
+    },
+    {
+      "rule_id": "rule_15",
+      "rule_type": "schema_conformance",
+      "expected_columns": [
+        "order_id",
+        "user_id",
+        "status",
+        "gender",
+        "created_at",
+        "returned_at",
+        "shipped_at",
+        "delivered_at",
+        "num_of_item"
+      ],
+      "rationale": "derived from the observed schema of the table."
+    }
+  ]
+}

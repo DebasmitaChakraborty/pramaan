@@ -1,6 +1,6 @@
 import pytest
 from pramaan.rules import NullRateRule, SchemaConformanceRule, compile_sweep_query
-from pramaan.sentry import check_schema_conformance
+from pramaan.sentry import check_schema_conformance, _row_to_sweep_result
 
 
 def test_schema_conformance_compiles_to_nothing_in_sweep_sql():
@@ -36,3 +36,25 @@ def test_check_schema_conformance_no_violation_when_columns_present():
     results = check_schema_conformance(rule, actual_columns=["a", "b", "c"])
 
     assert results == []
+
+
+def test_row_with_null_metric_becomes_violation_with_detail_not_a_crash():
+    """A rule with no supporting window (e.g. row_count_drift with nothing to
+    average) comes back from BigQuery as NULL metric/is_violation -- that
+    must not raise a pydantic validation error, and must never read as a
+    silent pass."""
+    row = {"rule_id": "r13", "rule_type": "row_count_drift", "metric_value": None, "threshold": 0.5, "is_violation": None}
+
+    result = _row_to_sweep_result(row)
+
+    assert result.is_violation is True
+    assert result.detail == "insufficient data for rule"
+
+
+def test_row_with_all_fields_present_passes_through_unchanged():
+    row = {"rule_id": "r1", "rule_type": "null_rate", "metric_value": 0.01, "threshold": 0.05, "is_violation": False}
+
+    result = _row_to_sweep_result(row)
+
+    assert result.is_violation is False
+    assert result.detail is None

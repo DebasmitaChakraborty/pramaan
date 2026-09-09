@@ -52,7 +52,7 @@ def test_freshness_rule_without_timestamp_stat_is_rejected():
 
 
 def test_row_count_drift_without_daily_volume_stat_is_rejected():
-    rule = RowCountDriftRule(rule_id="r4", column="email", min_row_count=100)
+    rule = RowCountDriftRule(rule_id="r4", column="email", min_ratio=0.5)
     with pytest.raises(ValueError, match="no rows_per_day stat"):
         validate_rule_has_supporting_stat(rule, COLUMN_STATS, FK_CANDIDATES)
 

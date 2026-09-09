@@ -1,0 +1,189 @@
+{
+  "run_id": "f0ddcd46f92b",
+  "per_fault": [
+    {
+      "fault_id": "fault_silent_duplicate_load_1788969600",
+      "scenario": "silent_duplicate_load",
+      "table": "orders",
+      "target_column": "order_id",
+      "expected_rule_type": "uniqueness",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "rule_10",
+          "rule_type": "uniqueness",
+          "metric_value": 0.0009539163033835411,
+          "threshold": 0.0,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_stalled_partition_1788969690",
+      "scenario": "stalled_partition",
+      "table": "orders",
+      "target_column": "created_at",
+      "expected_rule_type": "freshness",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "rule_12",
+          "rule_type": "freshness",
+          "metric_value": 64.0,
+          "threshold": 25.0,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_row_count_collapse_1788969774",
+      "scenario": "row_count_collapse",
+      "table": "orders",
+      "target_column": "created_at",
+      "expected_rule_type": "row_count_drift",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "rule_13",
+          "rule_type": "row_count_drift",
+          "metric_value": 0.25141700404858297,
+          "threshold": 0.5,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_historical_mass_delete_1788969861",
+      "scenario": "historical_mass_delete",
+      "table": "orders",
+      "target_column": "order_id",
+      "expected_rule_type": "none",
+      "caught": false,
+      "confusion_matrix": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 1
+      },
+      "violations": []
+    },
+    {
+      "fault_id": "fault_currency_swap_1788969978",
+      "scenario": "currency_swap",
+      "table": "order_items",
+      "target_column": "sale_price",
+      "expected_rule_type": "range",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "check_order_items_sale_price_range",
+          "rule_type": "range",
+          "metric_value": 0.13471805796644049,
+          "threshold": 0.0,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_referential_orphan_1788970117",
+      "scenario": "referential_orphan",
+      "table": "order_items",
+      "target_column": "user_id",
+      "expected_rule_type": "referential_integrity",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "check_order_items_user_ref",
+          "rule_type": "referential_integrity",
+          "metric_value": 0.09914654673610016,
+          "threshold": 0.0,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_schema_drift_1788970222",
+      "scenario": "schema_drift",
+      "table": "order_items",
+      "target_column": "status",
+      "expected_rule_type": "schema_conformance",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "check_order_items_schema:status",
+          "rule_type": "schema_conformance",
+          "metric_value": 1.0,
+          "threshold": 0.0,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "fault_id": "fault_null_flood_1788970266",
+      "scenario": "null_flood",
+      "table": "users",
+      "target_column": "email",
+      "expected_rule_type": "null_rate",
+      "caught": true,
+      "confusion_matrix": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0
+      },
+      "violations": [
+        {
+          "rule_id": "check_user_email_nulls",
+          "rule_type": "null_rate",
+          "metric_value": 0.24947744109659165,
+          "threshold": 0.01,
+          "is_violation": true,
+          "detail": null
+        }
+      ]
+    }
+  ],
+  "confusion_matrix": {
+    "TP": 7,
+    "FP": 0,
+    "FN": 1
+  },
+  "precision": 1.0,
+  "recall": 0.875,
+  "total_ground_truth_faults": 8,
+  "total_sweep_violations": 7
+}

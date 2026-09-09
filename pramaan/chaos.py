@@ -143,12 +143,40 @@ def inject_referential_orphan(dataset: str, table: str = "order_items", column: 
     job = execute_query_job(query)
     return {**entry, "dml_job_ended": job.ended}
 
-def inject_row_count_collapse(dataset: str, table: str = "orders", column: str = "order_id", run_id: Optional[str] = None) -> Dict[str, Any]:
-    """Scenario 6: Deletes most rows to simulate an upstream load collapsing,
-    triggering row_count_drift."""
+def inject_row_count_collapse(dataset: str, table: str = "orders", column: str = "created_at", run_id: Optional[str] = None) -> Dict[str, Any]:
+    """Scenario 6: Deletes most of the rows from the latest COMPLETE day present in
+    `column` -- the same day row_count_drift's numerator measures -- to simulate a
+    single incremental load coming in far short of normal volume, triggering
+    row_count_drift. Scoped to one day (not the whole table) so the day-over-day
+    ratio actually moves: a uniform table-wide deletion shrinks every day equally
+    and leaves the ratio unchanged (see inject_historical_mass_delete for that
+    failure mode, which this rule cannot see)."""
     _ensure_snapshot(dataset, table)
     run_id = _resolve_run_id(run_id)
     entry = log_ground_truth("row_count_collapse", table, column, "row_count_drift", run_id)
+    query = f"""
+    DELETE FROM `{dataset}.{table}`
+    WHERE DATE({column}) = (
+        SELECT DATE_SUB(MAX(DATE({column})), INTERVAL 1 DAY)
+        FROM `{dataset}.{table}`
+    )
+    AND RAND() < 0.9;
+    """
+    job = execute_query_job(query)
+    return {**entry, "dml_job_ended": job.ended}
+
+def inject_historical_mass_delete(dataset: str, table: str = "orders", column: str = "order_id", run_id: Optional[str] = None) -> Dict[str, Any]:
+    """Scenario 8: Deletes 90% of rows uniformly across the WHOLE table's history
+    (every day, not just the latest complete one) -- a mass historical
+    deletion/bad backfill, not a short incremental load. row_count_drift's
+    day-over-day ratio is structurally blind to this: numerator and denominator
+    shrink by the same proportion together, so the ratio doesn't move. No rule
+    in this contract covers this failure mode, so it's logged with
+    expected_rule_type "none" -- an honest, documented detection gap rather than
+    a rule bug."""
+    _ensure_snapshot(dataset, table)
+    run_id = _resolve_run_id(run_id)
+    entry = log_ground_truth("historical_mass_delete", table, column, "none", run_id)
     query = f"""
     DELETE FROM `{dataset}.{table}`
     WHERE RAND() < 0.9;
@@ -175,3 +203,16 @@ def get_ground_truth_logs() -> List[Dict[str, Any]]:
         return []
     with open(GROUND_TRUTH_LOG, "r") as f:
         return json.load(f)
+
+# Single source of truth for fault_kind -> inject function, used by cli.py's
+# `inject` subcommand and evals.py's isolated fault-matrix runner alike.
+INJECT_FUNCS = {
+    "null_flood": inject_null_flood,
+    "silent_duplicate_load": inject_silent_duplicate_load,
+    "currency_swap": inject_currency_swap,
+    "stalled_partition": inject_stalled_partition,
+    "referential_orphan": inject_referential_orphan,
+    "row_count_collapse": inject_row_count_collapse,
+    "historical_mass_delete": inject_historical_mass_delete,
+    "schema_drift": inject_schema_drift,
+}

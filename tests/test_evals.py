@@ -1,4 +1,4 @@
-from pramaan.evals import evaluate_sweep_results
+from pramaan.evals import evaluate_sweep_results, run_fault_matrix, run_isolated_fault
 from pramaan.sentry import SweepResult
 
 
@@ -30,6 +30,64 @@ def test_fault_tripping_the_same_rule_twice_is_one_tp():
     }
     result = evaluate_sweep_results(sweep_results_by_table, run_id="run-1", ground_truths=ground_truths)
     assert result["confusion_matrix"] == {"TP": 1, "FP": 0, "FN": 0}
+
+
+def test_isolated_fault_restores_row_count_to_snapshot_before_returning(monkeypatch):
+    """run_isolated_fault must leave the table back at its pre-fault row count
+    before it returns -- the whole point of running one fault at a time instead
+    of injecting a batch and evaluating once at the end."""
+    state = {"row_count": 1000, "snapshot_row_count": 1000}
+
+    def fake_inject(dataset, table, run_id):
+        state["row_count"] = 87  # simulate a collapse
+        return _gt("f1", table, "row_count_drift", run_id=run_id)
+
+    def fake_execute_sweep(dataset, table):
+        assert state["row_count"] == 87, "sweep must observe the injected (dirty) state"
+        return [_violation("r13", "row_count_drift")]
+
+    def fake_restore(dataset, table):
+        state["row_count"] = state["snapshot_row_count"]
+
+    monkeypatch.setattr("pramaan.evals.execute_sweep", fake_execute_sweep)
+    monkeypatch.setattr("pramaan.evals.restore", fake_restore)
+
+    result = run_isolated_fault("pramaan_demo", "orders", fake_inject, run_id="r1")
+
+    assert result["caught"] is True
+    assert state["row_count"] == state["snapshot_row_count"]
+
+
+def test_fault_matrix_restores_before_the_next_fault_starts(monkeypatch):
+    """Two faults sharing a table: if the first fault's restore ran before the
+    second fault's inject (isolation held, not stacking), the table's row count
+    equals the snapshot's the instant the second inject function is called."""
+    state = {"row_count": 1000, "snapshot_row_count": 1000}
+    row_count_at_second_inject = {}
+
+    def first_inject(dataset, table="orders", run_id=None):
+        state["row_count"] -= 500
+        return _gt("first", table, "none", run_id=run_id)
+
+    def second_inject(dataset, table="orders", run_id=None):
+        row_count_at_second_inject["value"] = state["row_count"]
+        state["row_count"] -= 900
+        return _gt("second", table, "none", run_id=run_id)
+
+    monkeypatch.setattr("pramaan.evals.execute_sweep", lambda dataset, table: [])
+    monkeypatch.setattr(
+        "pramaan.evals.restore",
+        lambda dataset, table: state.__setitem__("row_count", state["snapshot_row_count"]),
+    )
+
+    run_fault_matrix(
+        "pramaan_demo",
+        run_id="r1",
+        fault_kinds=["first", "second"],
+        inject_funcs={"first": first_inject, "second": second_inject},
+    )
+
+    assert row_count_at_second_inject["value"] == state["snapshot_row_count"]
 
 
 def test_fault_not_caught_is_one_fn():

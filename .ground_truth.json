@@ -275,5 +275,140 @@
     "target_column": "email",
     "expected_rule_type": "null_rate",
     "injected_at": "2026-09-03T22:01:04.899562+00:00"
+  },
+  {
+    "fault_id": "fault_silent_duplicate_load_1788968603",
+    "run_id": "f40c09f78fa4",
+    "scenario": "silent_duplicate_load",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "uniqueness",
+    "injected_at": "2026-09-09T15:43:23.780451+00:00"
+  },
+  {
+    "fault_id": "fault_stalled_partition_1788968612",
+    "run_id": "f40c09f78fa4",
+    "scenario": "stalled_partition",
+    "table": "orders",
+    "target_column": "created_at",
+    "expected_rule_type": "freshness",
+    "injected_at": "2026-09-09T15:43:32.106042+00:00"
+  },
+  {
+    "fault_id": "fault_row_count_collapse_1788968619",
+    "run_id": "f40c09f78fa4",
+    "scenario": "row_count_collapse",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "row_count_drift",
+    "injected_at": "2026-09-09T15:43:39.500380+00:00"
+  },
+  {
+    "fault_id": "fault_currency_swap_1788968731",
+    "run_id": "f40c09f78fa4",
+    "scenario": "currency_swap",
+    "table": "order_items",
+    "target_column": "sale_price",
+    "expected_rule_type": "range",
+    "injected_at": "2026-09-09T15:45:31.359759+00:00"
+  },
+  {
+    "fault_id": "fault_referential_orphan_1788968768",
+    "run_id": "f40c09f78fa4",
+    "scenario": "referential_orphan",
+    "table": "order_items",
+    "target_column": "user_id",
+    "expected_rule_type": "referential_integrity",
+    "injected_at": "2026-09-09T15:46:08.180699+00:00"
+  },
+  {
+    "fault_id": "fault_schema_drift_1788968815",
+    "run_id": "f40c09f78fa4",
+    "scenario": "schema_drift",
+    "table": "order_items",
+    "target_column": "status",
+    "expected_rule_type": "schema_conformance",
+    "injected_at": "2026-09-09T15:46:55.555381+00:00"
+  },
+  {
+    "fault_id": "fault_null_flood_1788968823",
+    "run_id": "f40c09f78fa4",
+    "scenario": "null_flood",
+    "table": "users",
+    "target_column": "email",
+    "expected_rule_type": "null_rate",
+    "injected_at": "2026-09-09T15:47:03.846701+00:00"
+  },
+  {
+    "fault_id": "fault_silent_duplicate_load_1788969600",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "silent_duplicate_load",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "uniqueness",
+    "injected_at": "2026-09-09T16:00:00.538140+00:00"
+  },
+  {
+    "fault_id": "fault_stalled_partition_1788969690",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "stalled_partition",
+    "table": "orders",
+    "target_column": "created_at",
+    "expected_rule_type": "freshness",
+    "injected_at": "2026-09-09T16:01:30.405435+00:00"
+  },
+  {
+    "fault_id": "fault_row_count_collapse_1788969774",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "row_count_collapse",
+    "table": "orders",
+    "target_column": "created_at",
+    "expected_rule_type": "row_count_drift",
+    "injected_at": "2026-09-09T16:02:54.966645+00:00"
+  },
+  {
+    "fault_id": "fault_historical_mass_delete_1788969861",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "historical_mass_delete",
+    "table": "orders",
+    "target_column": "order_id",
+    "expected_rule_type": "none",
+    "injected_at": "2026-09-09T16:04:21.928332+00:00"
+  },
+  {
+    "fault_id": "fault_currency_swap_1788969978",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "currency_swap",
+    "table": "order_items",
+    "target_column": "sale_price",
+    "expected_rule_type": "range",
+    "injected_at": "2026-09-09T16:06:18.916968+00:00"
+  },
+  {
+    "fault_id": "fault_referential_orphan_1788970117",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "referential_orphan",
+    "table": "order_items",
+    "target_column": "user_id",
+    "expected_rule_type": "referential_integrity",
+    "injected_at": "2026-09-09T16:08:37.433726+00:00"
+  },
+  {
+    "fault_id": "fault_schema_drift_1788970222",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "schema_drift",
+    "table": "order_items",
+    "target_column": "status",
+    "expected_rule_type": "schema_conformance",
+    "injected_at": "2026-09-09T16:10:22.963806+00:00"
+  },
+  {
+    "fault_id": "fault_null_flood_1788970266",
+    "run_id": "f0ddcd46f92b",
+    "scenario": "null_flood",
+    "table": "users",
+    "target_column": "email",
+    "expected_rule_type": "null_rate",
+    "injected_at": "2026-09-09T16:11:06.526151+00:00"
   }
 ]

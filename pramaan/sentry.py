@@ -10,6 +10,20 @@ class SweepResult(BaseModel):
     metric_value: float
     threshold: float
     is_violation: bool
+    detail: Optional[str] = None
+
+def _row_to_sweep_result(row: dict) -> SweepResult:
+    """A rule with no supporting data for its window (e.g. row_count_drift
+    with no prior day to average) comes back from BigQuery as NULL
+    metric/is_violation. That must not crash the whole table's sweep --
+    surface it as a violation with a detail message instead, since "we
+    can't tell" is never a pass."""
+    d = dict(row)
+    if d.get("metric_value") is None or d.get("is_violation") is None:
+        d["metric_value"] = d.get("metric_value") if d.get("metric_value") is not None else 0.0
+        d["is_violation"] = True
+        d["detail"] = "insufficient data for rule"
+    return SweepResult(**d)
 
 def parse_rule_dict(d: dict) -> RuleUnion:
     rtype = d.get("rule_type")
@@ -62,7 +76,7 @@ def execute_sweep(dataset: str, table: str) -> List[SweepResult]:
     if sql_rules:
         sweep_sql = compile_sweep_query(sql_rules, dataset, table)
         rows = execute_query(sweep_sql)
-        results.extend(SweepResult(**dict(row)) for row in rows)
+        results.extend(_row_to_sweep_result(row) for row in rows)
 
     if schema_rules:
         actual_columns = [c["column_name"] for c in get_table_columns(dataset, table)]
@@ -91,7 +105,7 @@ def execute_sweep_with_timing(dataset: str, table: str) -> Tuple[List[SweepResul
         sweep_sql = compile_sweep_query(sql_rules, dataset, table)
         job = execute_query_job(sweep_sql)
         sql_job_ended = job.ended
-        results.extend(SweepResult(**dict(row)) for row in job.result())
+        results.extend(_row_to_sweep_result(row) for row in job.result())
 
     if schema_rules:
         actual_columns, schema_job_ended = get_table_columns(dataset, table, return_job=True)
